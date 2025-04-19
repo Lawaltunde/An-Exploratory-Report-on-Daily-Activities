@@ -1,0 +1,219 @@
+---
+title: "Case Study 2"
+author: "Hammed Lawal"
+date: "2024-12-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# **Introduction**
+
+In the QMM7300 class for Fall 2024, I collected personalized data from September 5 until December 5 to analyze. I collected information on seven variables, and one was derived from one of the seven, making 90 rows(records) and eight columns(variables). The variables are listed below:
+
++-------------------+------------------------------------------+-------------------------------------------------------------------+-------------------+
+| S/N               | Variable                                 | Recorded                                                          | Type              |
++===================+==========================================+===================================================================+===================+
+| 1.                | Date                                     | dd-mm-yyyy                                                        | Identifier        |
++-------------------+------------------------------------------+-------------------------------------------------------------------+-------------------+
+| 2.                | Class                                    | Yes/No                                                            | Norminal          |
++-------------------+------------------------------------------+-------------------------------------------------------------------+-------------------+
+| 3.                | Study                                    | Hours                                                             | Continuous        |
++-------------------+------------------------------------------+-------------------------------------------------------------------+-------------------+
+| 4.                | Drive                                    | Yes/No                                                            | Ordinal           |
++-------------------+------------------------------------------+-------------------------------------------------------------------+-------------------+
+| 5.                | Quant.Value.of.Water_consumed_Daily..... | \>=4L is Hydrated, \<=3L but \>2 is Normal, \<= 2L is Dehydrated  | Ordinal           |
++-------------------+------------------------------------------+-------------------------------------------------------------------+-------------------+
+| 6.                | Qual.Value.of.Water_consumed_Daily.....  | Hydrated, Normal, Dehydrated                                      | Norminal          |
++-------------------+------------------------------------------+-------------------------------------------------------------------+-------------------+
+| 7.                | Walk                                     | Steps                                                             | Discrete          |
++-------------------+------------------------------------------+-------------------------------------------------------------------+-------------------+
+| 8.                | Work                                     | Hours                                                             | Continuous        |
++-------------------+------------------------------------------+-------------------------------------------------------------------+-------------------+
+
+: Hammed personalized data
+
+```{r include=FALSE}
+hammed <- read.csv("hammedLawalPersonalizedData.csv")
+```
+
+To analyse the data, I will be using below methods:
+
+-   Probability Rules
+
+-   The Normal Distribution
+
+-   Confidence Intervals
+
+-   Hypothesis Tests
+
+# **Exploratory Data Analysis**
+
+### Part 1: Confidence Intervals
+
+```{r}
+classDrive <- table(hammed$Class, hammed$Drive)
+classDrive
+```
+
+## Probability
+
+During my personal data collection, I frequently recorded a day as 'Yes' if I drove and 'No' if I did not.
+
+```{r include=FALSE}
+
+(drive <- sum(classDrive[1, 2], classDrive[2,2])/sum(classDrive)) #probability of driving
+# oR
+#(drive <- sum(classDrive[, 2])/sum(classDrive))
+(p.notDrive <- 1 - drive) #probability of not driving 
+
+
+
+```
+
+-   The probability of not driving during the period of data collection still the same as drive compliment: $P(not Drive) =$ `r p.notDrive`
+
+```{r include=FALSE}
+(p.classDrive <- (sum(classDrive[2, ]) + sum(classDrive[, 2]) - sum(classDrive[2,2]))/sum(classDrive))
+```
+
+-   The probability of driving to school to attend classes or drive = `r p.classDrive`
+
+```{r include=FALSE}
+(classConditionDrive <- sum(classDrive[2, 2])/ sum(classDrive[2, ]))
+```
+
+-   The probability of Driving, Given I will attend class = `r classConditionDrive`
+
+```{r include=FALSE}
+(CandD <- sum(classDrive[2,2])/sum(classDrive))
+```
+
+-   The probability of attending class and driving to class = `r CandD`
+
+```{r include=FALSE}
+(sum(classDrive[2, 2])/ sum(classDrive)) # 0.6222222 != 0
+```
+
+-   Attending class and driving are not mutually exclusive according to the above check, the value not equal zero.
+
+```{r include=FALSE}
+(p.attendClass <- sum(classDrive[2, ])/ sum(classDrive)) # 0.6555556
+
+(p.classAndDriveCondition <- classDrive[2,2]/ sum(classDrive[,2])) # 0.7567568
+```
+
+-   Checking if attending class is independent of driving $P(Class) != P(class|drive)$ `r p.attendClass != p.classAndDriveCondition` .Therefore, they are dependent as values are not equal.
+
+## Probability Distribution
+
+Using Probability Distributions to analyze if Cambrian BAPG students study more than 4.29 per day more than 12% of the time
+
+```{r include=FALSE}
+(hammed$Study <- ifelse(hammed$Study > 4.29, "yes", "no"))
+
+table(hammed$Study) # no = 19, yes = 71
+
+(days.study.morethan <- prop.table(table(hammed$Study))) # p.yes = 0.7888889
+
+p0 <- 0.7888889
+
+P <- 0.12
+
+```
+
+-   The categorical variable created shows Yes = 71 and No = 19, which means during my 90 days of data collection, I spent more than 4.29 hours studying in 71 days.
+
+-   Proportion of the day studied more than 4.29 hours is: $p$ = `r p0`
+
+```{r include=FALSE}
+n <- length(hammed$Study)
+
+(x <- 71/n)
+
+(p <- 0.12)
+
+(q <- 1 - p)
+
+(sd <- sqrt(p * q / n))
+
+```
+
+-   The value for mean $x$= `r x` $sd$= `r sd`
+
+```{r include=FALSE}
+(p.valuelessthanP.prop <- pnorm(p0, 0.12, sd, lower.tail = TRUE))
+```
+
+-   The probability of getting the value less than or equal to `r x * 100` % using 0.12 as the sample proportion is `r p.valuelessthanP.prop`
+
+## Confidence Interval
+
+```{r include=FALSE}
+confidenceInterval <- function(P.hat, n, cl){
+  # cl must be in decimal
+  q.hat <- 1 - P.hat
+  S.E <- sqrt(P.hat*q.hat/n)
+  z.crit <- qnorm(((cl/2)+0.5), 0, 1, lower.tail = TRUE)
+  lower <- P.hat - (z.crit*S.E)
+  upper <- P.hat + (z.crit*S.E)
+  return(c(upper, lower))
+}
+
+
+p.hat <- x
+n <- length(hammed$Study)
+cl <- 0.95
+
+(result <- confidenceInterval(p.hat, n, cl))
+
+#upper bound = 0.8732011
+#lower bound = 0.7045767
+
+(upper <- result[1] * 100)
+(lower <- result[2] * 100)
+
+(upper <- round(upper, 1))
+(lower <- round(lower, 1))
+```
+
+I am 95% confident that the true proportion of days I studied more than 4.29 hours lies between `r upper` % and `r lower` %
+
+## **Hypothesis Test**
+
+```{r echo=FALSE}
+p.test<-function(p.hat, n, p0, alpha=0.05, alternative=c("one", "two")){
+  alternative<-match.arg(alternative)
+  q0<-1-p0
+  sd<-sqrt(p0*q0/n)
+  z.test<-(p.hat-p0)/sd
+  z.test<-ifelse(z.test<0, z.test, -z.test)
+  p.value<-ifelse(alternative=="one", pnorm(z.test), 2*pnorm(z.test))
+  decision<-ifelse(p.value<alpha,"Reject the null hypothesis", "Do not reject the null hypothesis")
+  output<-data.frame(p.value, decision)
+  return(output)}
+
+
+p.test(p.hat, n, 0.12, 0.05, "one")
+
+```
+
+$$
+H_O: P = 0.12
+$$
+
+$$
+H_A:P > 0.12
+$$
+
+$p.hat$ = `r p.hat` $n$ =`r n` $P_0$ = 0.12
+
+Reject the null hypothesis; there is evidence that more than 12% of students spend more than 4.29 hours studying per day and 30 or more hours Perweek.
+
+# **Conclusion**
+
+Through the analysis conducted in QMM7300, I gained valuable insights into my class attendance and study habits. I discovered that I have been highly dedicated to my studies, consistently attending more than 78% of my classes—above the average—and studying for at least three hours daily. The requirement to update my personalized data daily motivated me to maintain this level of discipline. Compared to other Canadian students, who may not have been able to track and analyze their study habits in detail, I recognize how this structured approach has positively influenced my academic routine.
+
+Looking ahead, I aim to enhance my study and attendance habits further. My goal for the next semester is to increase the hours I dedicate to studying each day and strive for 100% attendance in all my classes. By adopting these improvements, I hope to maximize my learning potential and continue building on the strong foundation I have established this semester.
